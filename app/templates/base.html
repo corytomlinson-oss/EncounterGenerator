@@ -5,25 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Encounter Generator{% endblock %}</title>
 
-  <!-- Tailwind config MUST be defined before the CDN script loads -->
+  <!-- CDN must load first, then config is applied to the running instance -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    window.tailwind = {
-      config: {
-        theme: {
-          extend: {
-            colors: {
-              dnd: {
-                50:  '#fdf4f3', 100: '#fce8e6', 200: '#f9c5c1', 300: '#f59490',
-                400: '#ee5c59', 500: '#e13333', 600: '#c02020', 700: '#991818',
-                800: '#7e1717', 900: '#6b1919', 950: '#3b0808',
-              }
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dnd: {
+              50:  '#fdf4f3', 100: '#fce8e6', 200: '#f9c5c1', 300: '#f59490',
+              400: '#ee5c59', 500: '#e13333', 600: '#c02020', 700: '#991818',
+              800: '#7e1717', 900: '#6b1919', 950: '#3b0808',
             }
           }
         }
       }
     }
   </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -31,7 +30,7 @@
     [x-cloak] { display: none !important; }
   </style>
 
-  <!-- Re-scan Tailwind after every HTMX content swap -->
+  <!-- Re-scan Tailwind after HTMX swaps content so dynamic classes are styled -->
   <script>
     document.addEventListener('htmx:afterSettle', function () {
       if (window.tailwind && typeof window.tailwind.refresh === 'function') {
