@@ -108,39 +108,67 @@ def _compute_instance_meta(selected: list) -> tuple:
 
 def _pick_mixed(pool, target_xp: float, num: int) -> list:
     """
-    Horde+boss weighting: pick 1-2 higher-CR anchors, then fill remaining
-    slots with multiples of a lower-CR creature. Produces encounters like
-    '5 Goblins + 1 Orc' rather than all-unique monsters.
+    Multi-type encounter with natural duplicates.
+    Picks 1 anchor (higher CR) + 1-3 filler types (lower CR), then
+    distributes remaining slots randomly across the filler types so you
+    get encounters like: 1 Orc + 3 Goblins + 4 Kobolds.
+    More creatures → more types → more duplication per type.
     """
     if num <= 2:
-        # Too few to do horde logic; just pick diverse creatures
         result, used = [], set()
         for _ in range(num):
-            lo, hi = target_xp * 0.35, target_xp * 2.0
-            candidates = [m for m in pool if lo <= m.xp <= hi]
-            if not candidates:
-                candidates = sorted(pool, key=lambda m: abs(m.xp - target_xp))[:6]
-            unused = [m for m in candidates if m.name not in used]
-            chosen = random.choice(unused if unused else candidates)
+            lo, hi = target_xp * 0.4, target_xp * 2.5
+            candidates = [m for m in pool if lo <= m.xp <= hi] or \
+                         sorted(pool, key=lambda m: abs(m.xp - target_xp))[:6]
+            avail = [m for m in candidates if m.name not in used] or candidates
+            chosen = random.choice(avail)
             result.append(chosen)
             used.add(chosen.name)
         return result
 
-    # Pick 1 anchor (boss-tier): target_xp * 2–4x
-    boss_candidates = [m for m in pool if target_xp * 1.5 <= m.xp <= target_xp * 5.0]
-    if not boss_candidates:
-        boss_candidates = sorted(pool, key=lambda m: abs(m.xp - target_xp * 2.5))[:4]
-    boss = random.choice(boss_candidates)
+    # Number of distinct monster types scales with creature count
+    if num <= 4:
+        n_types = random.randint(2, min(num, 3))
+    elif num <= 8:
+        n_types = random.randint(2, min(num, 4))
+    else:
+        n_types = random.randint(3, min(num, 5))
+    n_types = min(n_types, num)
 
-    # Horde filler: target_xp * 0.2–0.6x (noticeably weaker than boss)
-    horde_candidates = [m for m in pool if target_xp * 0.15 <= m.xp <= target_xp * 0.65
-                        and m.name != boss.name]
-    if not horde_candidates:
-        horde_candidates = [m for m in pool if m.name != boss.name] or pool[:]
-    filler = random.choice(horde_candidates)
+    # One anchor: stronger than target_xp
+    anchor_pool = [m for m in pool if target_xp * 1.2 <= m.xp <= target_xp * 5.0]
+    if not anchor_pool:
+        anchor_pool = sorted(pool, key=lambda m: abs(m.xp - target_xp * 2.0))[:5]
+    anchor = random.choice(anchor_pool)
 
-    # Build result: 1 boss + (num-1) copies of filler
-    result = [boss] + [filler] * (num - 1)
+    # Filler types: weaker than target_xp, each a different monster
+    used_names = {anchor.name}
+    filler_pool = [m for m in pool if m.xp <= target_xp * 0.8 and m.name not in used_names]
+    if not filler_pool:
+        filler_pool = [m for m in pool if m.name not in used_names] or list(pool)
+    random.shuffle(filler_pool)
+
+    filler_types = []
+    for m in filler_pool:
+        if m.name not in used_names:
+            filler_types.append(m)
+            used_names.add(m.name)
+            if len(filler_types) >= n_types - 1:
+                break
+
+    if not filler_types:
+        return [anchor] * num
+
+    # Give each type at least 1 slot, distribute remaining randomly among fillers
+    filler_counts = [1] * len(filler_types)
+    remaining = num - 1 - len(filler_types)  # 1 for anchor, 1 each for fillers
+    while remaining > 0:
+        filler_counts[random.randint(0, len(filler_types) - 1)] += 1
+        remaining -= 1
+
+    result = [anchor]
+    for filler, count in zip(filler_types, filler_counts):
+        result.extend([filler] * count)
     random.shuffle(result)
     return result
 
