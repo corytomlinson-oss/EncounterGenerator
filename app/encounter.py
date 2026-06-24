@@ -1,4 +1,6 @@
 import random
+import string
+from collections import Counter
 from sqlalchemy.orm import Session
 from app.models import Monster
 
@@ -79,17 +81,67 @@ def _pick_closest(pool, target_xp: float) -> Monster:
     return min(pool, key=lambda m: abs(m.xp - target_xp))
 
 
+def _compute_instance_meta(selected: list) -> tuple:
+    """Returns (labels, unique_monsters, instance_to_unique_index)."""
+    name_counts = Counter(m.name for m in selected)
+    name_letter_idx: dict[str, int] = {}
+    labels = []
+    for m in selected:
+        if name_counts[m.name] > 1:
+            idx = name_letter_idx.get(m.name, 0)
+            labels.append(string.ascii_uppercase[min(idx, 25)])
+            name_letter_idx[m.name] = idx + 1
+        else:
+            labels.append("")
+
+    seen: dict[str, int] = {}
+    unique_monsters = []
+    instance_to_unique = []
+    for m in selected:
+        if m.name not in seen:
+            seen[m.name] = len(unique_monsters)
+            unique_monsters.append(m)
+        instance_to_unique.append(seen[m.name])
+
+    return labels, unique_monsters, instance_to_unique
+
+
 def _pick_mixed(pool, target_xp: float, num: int) -> list:
-    result, used = [], set()
-    for _ in range(num):
-        lo, hi = target_xp * 0.35, target_xp * 2.0
-        candidates = [m for m in pool if lo <= m.xp <= hi]
-        if not candidates:
-            candidates = sorted(pool, key=lambda m: abs(m.xp - target_xp))[:6]
-        unused = [m for m in candidates if m.name not in used]
-        chosen = random.choice(unused if unused else candidates)
-        result.append(chosen)
-        used.add(chosen.name)
+    """
+    Horde+boss weighting: pick 1-2 higher-CR anchors, then fill remaining
+    slots with multiples of a lower-CR creature. Produces encounters like
+    '5 Goblins + 1 Orc' rather than all-unique monsters.
+    """
+    if num <= 2:
+        # Too few to do horde logic; just pick diverse creatures
+        result, used = [], set()
+        for _ in range(num):
+            lo, hi = target_xp * 0.35, target_xp * 2.0
+            candidates = [m for m in pool if lo <= m.xp <= hi]
+            if not candidates:
+                candidates = sorted(pool, key=lambda m: abs(m.xp - target_xp))[:6]
+            unused = [m for m in candidates if m.name not in used]
+            chosen = random.choice(unused if unused else candidates)
+            result.append(chosen)
+            used.add(chosen.name)
+        return result
+
+    # Pick 1 anchor (boss-tier): target_xp * 2–4x
+    boss_candidates = [m for m in pool if target_xp * 1.5 <= m.xp <= target_xp * 5.0]
+    if not boss_candidates:
+        boss_candidates = sorted(pool, key=lambda m: abs(m.xp - target_xp * 2.5))[:4]
+    boss = random.choice(boss_candidates)
+
+    # Horde filler: target_xp * 0.2–0.6x (noticeably weaker than boss)
+    horde_candidates = [m for m in pool if target_xp * 0.15 <= m.xp <= target_xp * 0.65
+                        and m.name != boss.name]
+    if not horde_candidates:
+        horde_candidates = [m for m in pool if m.name != boss.name] or pool[:]
+    filler = random.choice(horde_candidates)
+
+    # Build result: 1 boss + (num-1) copies of filler
+    result = [boss] + [filler] * (num - 1)
+    random.shuffle(result)
     return result
 
 
@@ -124,9 +176,13 @@ def generate_encounter(
     raw_xp = sum(m.xp for m in selected)
     adj_xp = int(raw_xp * get_multiplier(len(selected)))
     actual = get_actual_difficulty(adj_xp, level, size)
+    labels, unique_monsters, instance_to_unique = _compute_instance_meta(selected)
 
     return {
         "monsters":            selected,
+        "monster_labels":      labels,
+        "unique_monsters":     unique_monsters,
+        "instance_to_unique":  instance_to_unique,
         "raw_xp":              raw_xp,
         "adjusted_xp":         adj_xp,
         "difficulty":          actual,
