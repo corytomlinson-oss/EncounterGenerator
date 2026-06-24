@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Encounter Generator{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+  <!-- Left: form -->
+  <div class="lg:col-span-1">
+    <div class="bg-white rounded-2xl shadow p-6">
+      <h2 class="text-xl font-bold text-slate-800 mb-5">Build Encounter</h2>
+
+      <form
+        hx-post="/generate"
+        hx-target="#result"
+        hx-swap="innerHTML"
+        hx-indicator="#spinner"
+        class="space-y-4">
+
+        <!-- Party Level -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Party Level</label>
+          <div class="flex items-center gap-3" x-data="{ val: 5 }">
+            <input type="range" name="party_level" min="1" max="20" x-model="val"
+              class="flex-1 accent-dnd-600">
+            <span class="w-6 text-center font-bold text-slate-700" x-text="val"></span>
+          </div>
+        </div>
+
+        <!-- Party Size -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Party Size</label>
+          <div class="flex items-center gap-3" x-data="{ val: 4 }">
+            <input type="range" name="party_size" min="1" max="10" x-model="val"
+              class="flex-1 accent-dnd-600">
+            <span class="w-6 text-center font-bold text-slate-700" x-text="val"></span>
+          </div>
+        </div>
+
+        <!-- Difficulty -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Difficulty</label>
+          <select name="difficulty"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-dnd-500">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+            <option value="deadly">Deadly</option>
+          </select>
+        </div>
+
+        <!-- Number of Creatures -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Number of Creatures</label>
+          <div class="flex items-center gap-3" x-data="{ val: 4 }">
+            <input type="range" name="num_creatures" min="1" max="15" x-model="val"
+              class="flex-1 accent-dnd-600">
+            <span class="w-6 text-center font-bold text-slate-700" x-text="val"></span>
+          </div>
+        </div>
+
+        <!-- Encounter Type -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Encounter Type</label>
+          <div class="flex gap-2">
+            <label class="flex-1">
+              <input type="radio" name="encounter_type" value="single" class="sr-only peer" checked>
+              <div class="text-center py-2 rounded-lg border-2 border-slate-200 text-sm font-medium cursor-pointer
+                          peer-checked:border-dnd-500 peer-checked:bg-dnd-50 peer-checked:text-dnd-700 hover:border-slate-300 transition-colors">
+                Single Type
+              </div>
+            </label>
+            <label class="flex-1">
+              <input type="radio" name="encounter_type" value="mixed" class="sr-only peer">
+              <div class="text-center py-2 rounded-lg border-2 border-slate-200 text-sm font-medium cursor-pointer
+                          peer-checked:border-dnd-500 peer-checked:bg-dnd-50 peer-checked:text-dnd-700 hover:border-slate-300 transition-colors">
+                Mixed
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Environment -->
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1">Environment</label>
+          <select name="environment"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-dnd-500">
+            <option value="random">Random (any)</option>
+            <option value="dungeon">Dungeon</option>
+            <option value="forest">Forest</option>
+            <option value="cave">Cave</option>
+            <option value="mountain">Mountain</option>
+            <option value="arctic">Arctic</option>
+            <option value="desert">Desert</option>
+            <option value="urban">Urban</option>
+            <option value="swamp">Swamp</option>
+            <option value="coastal">Coastal</option>
+          </select>
+        </div>
+
+        <button type="submit"
+          class="w-full bg-dnd-600 hover:bg-dnd-700 text-white font-bold py-2.5 rounded-xl transition-colors shadow">
+          ⚔️ Generate Encounter
+        </button>
+
+      </form>
+
+      <!-- Spinner -->
+      <div id="spinner" class="htmx-indicator mt-4 text-center text-sm text-slate-500">
+        Rolling dice…
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: result -->
+  <div class="lg:col-span-2">
+    <div id="result" class="space-y-4">
+      <div class="bg-white rounded-2xl shadow p-8 text-center text-slate-400">
+        <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-lg font-medium">Set your parameters and generate an encounter</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

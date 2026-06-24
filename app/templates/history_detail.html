@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ enc.name or "Saved Encounter" }}{% endblock %}
+{% block content %}
+
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <a href="/history" class="text-sm text-slate-400 hover:text-slate-600">← History</a>
+    <h1 class="text-2xl font-bold text-slate-800 mt-1">{{ enc.name or "Saved Encounter" }}</h1>
+  </div>
+  <button
+    hx-post="/history/{{ enc.id }}/delete"
+    hx-confirm="Delete this encounter?"
+    hx-on::after-request="window.location='/history'"
+    class="text-sm bg-red-50 hover:bg-red-100 text-red-600 font-medium px-3 py-1.5 rounded-lg transition-colors">
+    Delete
+  </button>
+</div>
+
+<!-- Summary -->
+<div class="bg-white rounded-2xl shadow p-5 mb-6">
+  <div class="flex flex-wrap gap-6">
+    <div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Difficulty</div>
+      <div class="text-lg font-bold {{ enc.difficulty_color }}">{{ enc.actual_difficulty|title }}</div>
+    </div>
+    <div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Adjusted XP</div>
+      <div class="text-lg font-bold text-slate-700">{{ "{:,}".format(enc.adjusted_xp) }}</div>
+    </div>
+    <div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Party</div>
+      <div class="text-lg font-bold text-slate-700">{{ enc.party_size }} players · Level {{ enc.party_level }}</div>
+    </div>
+    <div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Environment</div>
+      <div class="text-lg font-bold text-slate-700">{{ enc.environment|title if enc.environment and enc.environment != 'random' else 'Any' }}</div>
+    </div>
+    <div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Saved</div>
+      <div class="text-lg font-bold text-slate-700">{{ enc.created_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+    </div>
+  </div>
+  {% if enc.notes %}
+  <div class="mt-4 pt-4 border-t border-slate-100">
+    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Notes</div>
+    <p class="text-sm text-slate-600">{{ enc.notes }}</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Monster Cards -->
+{% set monsters = enc.monsters_list %}
+{% set seen_names = namespace(v=[]) %}
+{% for m in monsters %}
+  {% if m.name not in seen_names.v %}
+    {% set seen_names.v = seen_names.v + [m.name] %}
+    {% set count = monsters | selectattr('name', 'equalto', m.name) | list | length %}
+
+<div class="bg-white rounded-2xl shadow overflow-hidden mb-4">
+  <div class="bg-slate-800 text-white px-5 py-3 flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-2">
+        {% if count > 1 %}
+          <span class="bg-dnd-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">×{{ count }}</span>
+        {% endif %}
+        <h3 class="text-lg font-bold">{{ m.name }}</h3>
+      </div>
+      <p class="text-sm text-slate-300">
+        {{ m.size }} {{ m.type }}{% if m.subtype %} ({{ m.subtype }}){% endif %} · {{ m.alignment }}
+      </p>
+    </div>
+    <div class="text-right">
+      <div class="text-xs text-slate-400 uppercase tracking-wider">Challenge</div>
+      {% if m.cr == 0.125 %}{% set cr_display = "1/8" %}
+      {% elif m.cr == 0.25 %}{% set cr_display = "1/4" %}
+      {% elif m.cr == 0.5 %}{% set cr_display = "1/2" %}
+      {% else %}{% set cr_display = m.cr | int | string %}{% endif %}
+      <div class="font-bold text-dnd-300">CR {{ cr_display }} ({{ "{:,}".format(m.xp) }} XP)</div>
+    </div>
+  </div>
+
+  <div class="p-5">
+    <div class="flex flex-wrap gap-6 pb-4 border-b border-slate-100 mb-4">
+      <div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">AC</span>
+        <p class="font-bold text-slate-800">{{ m.ac }}{% if m.ac_note %} ({{ m.ac_note }}){% endif %}</p>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">HP</span>
+        <p class="font-bold text-slate-800">{{ m.hp }}{% if m.hp_dice %} ({{ m.hp_dice }}){% endif %}</p>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Speed</span>
+        <p class="font-bold text-slate-800">{{ m.speed }}</p>
+      </div>
+    </div>
+
+    {% set stats = [('STR', m.str, m.str_mod), ('DEX', m.dex, m.dex_mod), ('CON', m.con, m.con_mod),
+                   ('INT', m['int'], m.int_mod), ('WIS', m.wis, m.wis_mod), ('CHA', m.cha, m.cha_mod)] %}
+    <div class="grid grid-cols-6 gap-2 pb-4 border-b border-slate-100 mb-4 text-center">
+      {% for label, score, mod in stats %}
+      <div class="bg-slate-50 rounded-lg py-2">
+        <div class="text-xs font-bold text-slate-400 uppercase">{{ label }}</div>
+        <div class="text-sm font-bold text-slate-800">{{ score }}</div>
+        <div class="text-xs text-slate-500">({{ "+" + mod|string if mod >= 0 else mod|string }})</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if m.senses %}
+    <p class="text-sm text-slate-600 mb-1"><span class="font-semibold">Senses</span> {{ m.senses }}</p>
+    {% endif %}
+    {% if m.languages %}
+    <p class="text-sm text-slate-600 mb-3"><span class="font-semibold">Languages</span> {{ m.languages }}</p>
+    {% endif %}
+
+    {% if m.special_abilities %}
+    <div class="mb-3 space-y-1">
+      {% for ab in m.special_abilities %}
+      <p class="text-sm"><span class="font-bold italic">{{ ab.name }}.</span> <span class="text-slate-600">{{ ab.desc }}</span></p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if m.actions %}
+    <div class="mb-2">
+      <h4 class="text-xs font-bold uppercase tracking-widest text-dnd-700 border-b border-dnd-200 pb-1 mb-2">Actions</h4>
+      {% for a in m.actions %}
+      <p class="text-sm mb-1"><span class="font-bold italic">{{ a.name }}.</span> <span class="text-slate-600">{{ a.desc }}</span></p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if m.legendary_actions %}
+    <div>
+      <h4 class="text-xs font-bold uppercase tracking-widest text-amber-700 border-b border-amber-200 pb-1 mb-2">Legendary Actions</h4>
+      {% for la in m.legendary_actions %}
+      <p class="text-sm mb-1"><span class="font-bold italic">{{ la.name }}.</span> <span class="text-slate-600">{{ la.desc }}</span></p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+  {% endif %}
+{% endfor %}
+
+{% endblock %}

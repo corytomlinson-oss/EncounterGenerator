@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Encounter History{% endblock %}
+{% block content %}
+
+<div class="mb-6 flex items-center justify-between">
+  <h1 class="text-2xl font-bold text-slate-800">Encounter History</h1>
+  <a href="/" class="text-sm text-dnd-600 hover:text-dnd-800 font-semibold">← New Encounter</a>
+</div>
+
+{% if not encounters %}
+<div class="bg-white rounded-2xl shadow p-10 text-center text-slate-400">
+  <p class="text-lg">No saved encounters yet.</p>
+  <a href="/" class="mt-3 inline-block text-dnd-600 hover:text-dnd-800 font-semibold text-sm">Generate your first encounter →</a>
+</div>
+{% else %}
+<div class="space-y-3">
+  {% for enc in encounters %}
+  <div id="enc-{{ enc.id }}" class="bg-white rounded-xl shadow px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 mb-0.5">
+        {% if enc.name %}
+        <span class="font-bold text-slate-800">{{ enc.name }}</span>
+        <span class="text-slate-400">·</span>
+        {% endif %}
+        <span class="text-sm font-semibold {{ enc.difficulty_color }}">{{ enc.actual_difficulty|title }}</span>
+        <span class="text-slate-400 text-sm">·</span>
+        <span class="text-sm text-slate-500">{{ "{:,}".format(enc.adjusted_xp) }} XP</span>
+      </div>
+      <p class="text-sm text-slate-500 truncate">{{ enc.monster_summary }}</p>
+      <p class="text-xs text-slate-400 mt-0.5">
+        Level {{ enc.party_level }} · {{ enc.party_size }} players ·
+        {{ enc.environment|title if enc.environment and enc.environment != 'random' else 'Any' }} ·
+        {{ enc.created_at.strftime('%b %d, %Y') }}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/history/{{ enc.id }}"
+        class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded-lg transition-colors">
+        View
+      </a>
+      <button
+        hx-post="/history/{{ enc.id }}/delete"
+        hx-target="#enc-{{ enc.id }}"
+        hx-swap="outerHTML"
+        hx-confirm="Delete this encounter?"
+        class="text-sm bg-red-50 hover:bg-red-100 text-red-600 font-medium px-3 py-1.5 rounded-lg transition-colors">
+        Delete
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,234 @@
+<!-- Encounter Summary -->
+<div class="bg-white rounded-2xl shadow p-5 mb-4">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-lg font-bold text-slate-800">Encounter</span>
+        <span class="px-2.5 py-0.5 rounded-full text-sm font-semibold {{ difficulty_bg }}">
+          {{ difficulty_label }}
+        </span>
+      </div>
+      <p class="text-sm text-slate-500">
+        {{ monsters|length }} creature{% if monsters|length != 1 %}s{% endif %} ·
+        {{ party_size }} players · Level {{ party_level }} ·
+        {{ environment|title if environment != 'random' else 'Any environment' }}
+      </p>
+    </div>
+
+    <div class="flex gap-6 text-center">
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">XP Budget</div>
+        <div class="text-lg font-bold text-slate-700">{{ "{:,}".format(budget) }}</div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Raw XP</div>
+        <div class="text-lg font-bold text-slate-700">{{ "{:,}".format(raw_xp) }}</div>
+      </div>
+      <div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Adjusted XP</div>
+        <div class="text-2xl font-bold {{ difficulty_color }}">{{ "{:,}".format(adjusted_xp) }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Monster Cards -->
+{% set seen = namespace(names=[]) %}
+{% for monster in monsters %}
+  {% if monster.name not in seen.names %}
+    {% set seen.names = seen.names + [monster.name] %}
+    {% set count = monsters | selectattr('name', 'equalto', monster.name) | list | length %}
+
+<div class="bg-white rounded-2xl shadow overflow-hidden mb-4">
+  <!-- Card header -->
+  <div class="bg-slate-800 text-white px-5 py-3 flex items-center justify-between">
+    <div>
+      <div class="flex items-center gap-2">
+        {% if count > 1 %}
+          <span class="bg-dnd-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">×{{ count }}</span>
+        {% endif %}
+        <h3 class="text-lg font-bold">{{ monster.name }}</h3>
+      </div>
+      <p class="text-sm text-slate-300">
+        {{ monster.size }} {{ monster.type }}{% if monster.subtype %} ({{ monster.subtype }}){% endif %} · {{ monster.alignment }}
+      </p>
+    </div>
+    <div class="text-right">
+      <div class="text-xs text-slate-400 uppercase tracking-wider">Challenge</div>
+      <div class="font-bold text-dnd-300">CR {{ monster.cr_display }} ({{ "{:,}".format(monster.xp) }} XP)</div>
+    </div>
+  </div>
+
+  <div class="p-5">
+    <!-- Core stats row -->
+    <div class="flex flex-wrap gap-6 pb-4 border-b border-slate-100 mb-4">
+      <div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Armor Class</span>
+        <p class="font-bold text-slate-800">{{ monster.ac }}{% if monster.ac_note %} ({{ monster.ac_note }}){% endif %}</p>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hit Points</span>
+        <p class="font-bold text-slate-800">{{ monster.hp }}{% if monster.hp_dice %} ({{ monster.hp_dice }}){% endif %}</p>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Speed</span>
+        <p class="font-bold text-slate-800">{{ monster.speed }}</p>
+      </div>
+      <div>
+        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</span>
+        <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold {{ monster.type_color }}">{{ monster.type|title }}</span>
+      </div>
+    </div>
+
+    <!-- Ability Scores -->
+    <div class="grid grid-cols-6 gap-2 pb-4 border-b border-slate-100 mb-4 text-center">
+      {% for label, score, mod in [
+        ('STR', monster.str_, monster.str_mod_fmt),
+        ('DEX', monster.dex, monster.dex_mod_fmt),
+        ('CON', monster.con, monster.con_mod_fmt),
+        ('INT', monster.int_, monster.int_mod_fmt),
+        ('WIS', monster.wis, monster.wis_mod_fmt),
+        ('CHA', monster.cha, monster.cha_mod_fmt),
+      ] %}
+      <div class="bg-slate-50 rounded-lg py-2">
+        <div class="text-xs font-bold text-slate-400 uppercase">{{ label }}</div>
+        <div class="text-sm font-bold text-slate-800">{{ score }}</div>
+        <div class="text-xs text-slate-500">({{ mod }})</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Traits row -->
+    <div class="space-y-1 text-sm pb-4 border-b border-slate-100 mb-4">
+      {% if monster.saving_throws_dict %}
+      <p><span class="font-semibold text-slate-600">Saving Throws</span>
+        {{ monster.saving_throws_dict.items() | map('join', ' ') | join(', ') }}</p>
+      {% endif %}
+      {% if monster.skills_dict %}
+      <p><span class="font-semibold text-slate-600">Skills</span>
+        {% for skill, val in monster.skills_dict.items() %}{{ skill }} {{ val }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+      {% endif %}
+      {% if monster.damage_vulnerabilities %}
+      <p><span class="font-semibold text-slate-600">Damage Vulnerabilities</span> {{ monster.damage_vulnerabilities }}</p>
+      {% endif %}
+      {% if monster.damage_resistances %}
+      <p><span class="font-semibold text-slate-600">Damage Resistances</span> {{ monster.damage_resistances }}</p>
+      {% endif %}
+      {% if monster.damage_immunities %}
+      <p><span class="font-semibold text-slate-600">Damage Immunities</span> {{ monster.damage_immunities }}</p>
+      {% endif %}
+      {% if monster.condition_immunities %}
+      <p><span class="font-semibold text-slate-600">Condition Immunities</span> {{ monster.condition_immunities }}</p>
+      {% endif %}
+      {% if monster.senses %}
+      <p><span class="font-semibold text-slate-600">Senses</span> {{ monster.senses }}</p>
+      {% endif %}
+      {% if monster.languages %}
+      <p><span class="font-semibold text-slate-600">Languages</span> {{ monster.languages }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Special Abilities -->
+    {% if monster.special_abilities_list %}
+    <div class="mb-4 space-y-2">
+      {% for ability in monster.special_abilities_list %}
+      <p class="text-sm"><span class="font-bold italic text-slate-700">{{ ability.name }}.</span>
+        <span class="text-slate-600">{{ ability.desc }}</span></p>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    {% if monster.actions_list %}
+    <div class="mb-3">
+      <h4 class="text-xs font-bold uppercase tracking-widest text-dnd-700 border-b border-dnd-200 pb-1 mb-2">Actions</h4>
+      <div class="space-y-2">
+        {% for action in monster.actions_list %}
+        <p class="text-sm"><span class="font-bold italic text-slate-700">{{ action.name }}.</span>
+          <span class="text-slate-600">{{ action.desc }}</span></p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Reactions -->
+    {% if monster.reactions_list %}
+    <div class="mb-3">
+      <h4 class="text-xs font-bold uppercase tracking-widest text-dnd-700 border-b border-dnd-200 pb-1 mb-2">Reactions</h4>
+      <div class="space-y-2">
+        {% for r in monster.reactions_list %}
+        <p class="text-sm"><span class="font-bold italic text-slate-700">{{ r.name }}.</span>
+          <span class="text-slate-600">{{ r.desc }}</span></p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Legendary Actions -->
+    {% if monster.legendary_actions_list %}
+    <div>
+      <h4 class="text-xs font-bold uppercase tracking-widest text-amber-700 border-b border-amber-200 pb-1 mb-2">Legendary Actions</h4>
+      {% if monster.legendary_desc %}
+      <p class="text-sm text-slate-500 mb-2 italic">{{ monster.legendary_desc }}</p>
+      {% endif %}
+      <div class="space-y-2">
+        {% for la in monster.legendary_actions_list %}
+        <p class="text-sm"><span class="font-bold italic text-slate-700">{{ la.name }}.</span>
+          <span class="text-slate-600">{{ la.desc }}</span></p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+  {% endif %}
+{% endfor %}
+
+<!-- Save Form -->
+<div class="bg-white rounded-2xl shadow p-5" x-data="{ open: false }">
+  <button @click="open = !open"
+    class="flex items-center gap-2 text-sm font-semibold text-dnd-600 hover:text-dnd-800">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+    </svg>
+    Save this encounter
+    <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </button>
+
+  <div x-show="open" x-cloak class="mt-4">
+    <form hx-post="/save" hx-swap="innerHTML" hx-target="#save-result" class="space-y-3">
+      <input type="hidden" name="party_level" value="{{ party_level }}">
+      <input type="hidden" name="party_size" value="{{ party_size }}">
+      <input type="hidden" name="difficulty" value="{{ requested_difficulty }}">
+      <input type="hidden" name="environment" value="{{ environment }}">
+      <input type="hidden" name="encounter_type" value="{{ encounter_type }}">
+      <input type="hidden" name="raw_xp" value="{{ raw_xp }}">
+      <input type="hidden" name="adjusted_xp" value="{{ adjusted_xp }}">
+      <input type="hidden" name="actual_difficulty" value="{{ difficulty }}">
+      <input type="hidden" name="monster_ids" value="{{ monsters | map(attribute='id') | join(',') }}">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Encounter Name (optional)</label>
+          <input type="text" name="name" placeholder="e.g. The Spider Den"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-dnd-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Notes (optional)</label>
+          <input type="text" name="notes" placeholder="Campaign notes..."
+            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-dnd-500">
+        </div>
+      </div>
+
+      <button type="submit"
+        class="bg-dnd-600 hover:bg-dnd-700 text-white text-sm font-bold px-5 py-2 rounded-lg transition-colors">
+        Save Encounter
+      </button>
+    </form>
+    <div id="save-result" class="mt-2"></div>
+  </div>
+</div>

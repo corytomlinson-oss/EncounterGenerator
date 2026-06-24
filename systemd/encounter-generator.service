@@ -1,0 +1,14 @@
+[Unit]
+Description=D&D Encounter Generator
+After=network.target
+
+[Service]
+User=cory
+WorkingDirectory=/home/cory/HomeHub/EncounterGenerator
+ExecStart=/home/cory/HomeHub/EncounterGenerator/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8084
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
