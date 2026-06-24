@@ -85,6 +85,21 @@ class Monster(Base):
     def saving_throws_dict(self): return json.loads(self.saving_throws) if self.saving_throws else {}
     @property
     def skills_dict(self):        return json.loads(self.skills) if self.skills else {}
+
+    @property
+    def all_saving_throws(self):
+        """All 6 saves: proficiency override (from saving_throws_dict) or base ability modifier."""
+        prof = {k.upper(): v for k, v in self.saving_throws_dict.items()}
+        base = {
+            "STR": self._fmt(self.str_mod),
+            "DEX": self._fmt(self.dex_mod),
+            "CON": self._fmt(self.con_mod),
+            "INT": self._fmt(self.int_mod),
+            "WIS": self._fmt(self.wis_mod),
+            "CHA": self._fmt(self.cha_mod),
+        }
+        return {stat: (prof[stat], True) if stat in prof else (base[stat], False)
+                for stat in ("STR", "DEX", "CON", "INT", "WIS", "CHA")}
     @property
     def special_abilities_list(self): return json.loads(self.special_abilities) if self.special_abilities else []
     @property
@@ -128,7 +143,9 @@ class Monster(Base):
             "str_mod_fmt": self.str_mod_fmt, "dex_mod_fmt": self.dex_mod_fmt,
             "con_mod_fmt": self.con_mod_fmt, "int_mod_fmt": self.int_mod_fmt,
             "wis_mod_fmt": self.wis_mod_fmt, "cha_mod_fmt": self.cha_mod_fmt,
-            "saving_throws": self.saving_throws_dict, "skills": self.skills_dict,
+            "saving_throws": self.saving_throws_dict,
+            "all_saving_throws": {k: {"val": v, "prof": p} for k, (v, p) in self.all_saving_throws.items()},
+            "skills": self.skills_dict,
             "damage_vulnerabilities": self.damage_vulnerabilities,
             "damage_resistances": self.damage_resistances,
             "damage_immunities": self.damage_immunities,

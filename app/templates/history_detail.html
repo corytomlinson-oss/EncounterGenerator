@@ -107,6 +107,16 @@
       {% endfor %}
     </div>
 
+    <!-- Saving Throws -->
+    <div class="flex flex-wrap gap-x-4 gap-y-0.5 text-sm pb-3 mb-3 border-b border-slate-100">
+      <span class="font-semibold text-slate-600">Saving Throws</span>
+      {% for stat, data in m.all_saving_throws.items() %}
+      <span class="{% if data.prof %}font-bold text-dnd-700{% else %}text-slate-500{% endif %}">
+        {{ stat }} {{ data.val }}
+      </span>
+      {% endfor %}
+    </div>
+
     {% if m.senses %}
     <p class="text-sm text-slate-600 mb-1"><span class="font-semibold">Senses</span> {{ m.senses }}</p>
     {% endif %}

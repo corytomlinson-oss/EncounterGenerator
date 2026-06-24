@@ -101,10 +101,15 @@
 
     <!-- Traits row -->
     <div class="space-y-1 text-sm pb-4 border-b border-slate-100 mb-4">
-      {% if monster.saving_throws_dict %}
-      <p><span class="font-semibold text-slate-600">Saving Throws</span>
-        {{ monster.saving_throws_dict.items() | map('join', ' ') | join(', ') }}</p>
-      {% endif %}
+      <!-- Saving Throws: all 6, proficient ones bold -->
+      <div class="flex flex-wrap gap-x-4 gap-y-0.5">
+        <span class="font-semibold text-slate-600">Saving Throws</span>
+        {% for stat, (val, prof) in monster.all_saving_throws.items() %}
+        <span class="{% if prof %}font-bold text-dnd-700{% else %}text-slate-500{% endif %}">
+          {{ stat }} {{ val }}
+        </span>
+        {% endfor %}
+      </div>
       {% if monster.skills_dict %}
       <p><span class="font-semibold text-slate-600">Skills</span>
         {% for skill, val in monster.skills_dict.items() %}{{ skill }} {{ val }}{% if not loop.last %}, {% endif %}{% endfor %}</p>

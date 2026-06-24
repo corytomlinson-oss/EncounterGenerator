@@ -26,7 +26,7 @@ def startup():
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.post("/generate", response_class=HTMLResponse)
@@ -52,10 +52,7 @@ def generate(
     if not result:
         return HTMLResponse("<p class='text-red-500'>No monsters found for those filters.</p>")
 
-    return templates.TemplateResponse(
-        "partials/encounter_result.html",
-        {"request": request, **result},
-    )
+    return templates.TemplateResponse(request, "partials/encounter_result.html", result)
 
 
 @app.post("/save", response_class=HTMLResponse)
@@ -101,9 +98,7 @@ def save_encounter(
 @app.get("/history", response_class=HTMLResponse)
 def history(request: Request, db: Session = Depends(get_db)):
     encounters = db.query(SavedEncounter).order_by(SavedEncounter.created_at.desc()).all()
-    return templates.TemplateResponse(
-        "history.html", {"request": request, "encounters": encounters}
-    )
+    return templates.TemplateResponse(request, "history.html", {"encounters": encounters})
 
 
 @app.get("/history/{enc_id}", response_class=HTMLResponse)
@@ -111,9 +106,7 @@ def history_detail(enc_id: int, request: Request, db: Session = Depends(get_db))
     enc = db.query(SavedEncounter).get(enc_id)
     if not enc:
         return HTMLResponse("<p>Not found.</p>", status_code=404)
-    return templates.TemplateResponse(
-        "history_detail.html", {"request": request, "enc": enc}
-    )
+    return templates.TemplateResponse(request, "history_detail.html", {"enc": enc})
 
 
 @app.post("/history/{enc_id}/delete", response_class=HTMLResponse)
