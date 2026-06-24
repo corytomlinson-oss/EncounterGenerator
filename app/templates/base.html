@@ -4,28 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Encounter Generator{% endblock %}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <style>
-    [x-cloak] { display: none !important; }
-    .stat-label { @apply text-xs font-semibold uppercase tracking-wider text-slate-500; }
-    .stat-value { @apply text-sm font-bold text-slate-800; }
-  </style>
+
+  <!-- Tailwind config MUST be defined before the CDN script loads -->
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            dnd: {
-              50:  '#fdf4f3', 100: '#fce8e6', 200: '#f9c5c1', 300: '#f59490',
-              400: '#ee5c59', 500: '#e13333', 600: '#c02020', 700: '#991818',
-              800: '#7e1717', 900: '#6b1919', 950: '#3b0808',
+    window.tailwind = {
+      config: {
+        theme: {
+          extend: {
+            colors: {
+              dnd: {
+                50:  '#fdf4f3', 100: '#fce8e6', 200: '#f9c5c1', 300: '#f59490',
+                400: '#ee5c59', 500: '#e13333', 600: '#c02020', 700: '#991818',
+                800: '#7e1717', 900: '#6b1919', 950: '#3b0808',
+              }
             }
           }
         }
       }
     }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+
+  <!-- Re-scan Tailwind after every HTMX content swap -->
+  <script>
+    document.addEventListener('htmx:afterSettle', function () {
+      if (window.tailwind && typeof window.tailwind.refresh === 'function') {
+        window.tailwind.refresh();
+      }
+    });
   </script>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-800">
@@ -43,6 +55,9 @@
       <div class="flex items-center gap-4 text-sm">
         <a href="/" class="hover:text-dnd-300 transition-colors">Generate</a>
         <a href="/history" class="hover:text-dnd-300 transition-colors">History</a>
+        <a href="https://github.com/corytomlinson-oss/EncounterGenerator#readme"
+           target="_blank" rel="noopener"
+           class="hover:text-dnd-300 transition-colors">README</a>
         <a href="http://webpi.local" class="text-slate-400 hover:text-slate-200 transition-colors text-xs">← Hub</a>
       </div>
     </div>
