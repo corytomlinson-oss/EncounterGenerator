@@ -76,7 +76,7 @@
         <div class="text-xs text-slate-400 mb-1.5">CR {{ m.cr_display }} · {{ m.type|title }} · AC {{ m.ac }}</div>
 
         <!-- Row 3: HP bar + controls -->
-        <div class="flex items-center gap-1.5 mb-1.5" @click.stop>
+        <div class="flex items-center gap-2 mb-2" @click.stop>
           <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all"
                  :class="hp[{{ i }}] <= 0 ? 'bg-slate-200' : hp[{{ i }}] <= maxhp[{{ i }}] / 2 ? 'bg-red-500' : 'bg-emerald-500'"
