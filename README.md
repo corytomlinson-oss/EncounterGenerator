@@ -6,8 +6,11 @@ A self-hosted web app for building balanced D&D 5e random encounters by party le
 
 - XP budget encounter building using DMG thresholds (compatible with 2024 rules)
 - Filter monsters by environment (dungeon, forest, cave, mountain, arctic, desert, urban, swamp, coastal)
-- Single-type encounters (all same monster) or mixed encounters (varied CR pool)
-- Full stat blocks with ability scores, actions, traits, and legendary actions
+- Single-type encounters (all same monster) or mixed encounters (horde + boss style with natural duplicates)
+- Per-instance HP tracking with bloodied (≤50% HP) and dead states — no page reload needed
+- Letter labels for duplicate monsters: Goblin (A), Goblin (B), etc.
+- Full stat blocks with ability scores, saving throws, actions, traits, and legendary actions
+- Optional treasure generation scaled to the encounter's CR tier (coins, gems, magic items)
 - Save encounters to history with optional name and notes
 - Browse and delete saved encounters
 
@@ -44,7 +47,8 @@ EncounterGenerator/
 │   ├── encounter.py            # XP budget logic + monster selection
 │   ├── main.py                 # FastAPI routes
 │   ├── models.py               # Monster + SavedEncounter ORM models
-│   └── seed.py                 # Loads monsters.json into DB on startup
+│   ├── seed.py                 # Loads monsters.json into DB on startup
+│   └── treasure.py             # CR-tiered treasure table generation
 ├── systemd/
 │   └── encounter-generator.service
 ├── requirements.txt
@@ -98,3 +102,14 @@ The database is created automatically at `data/encounter.db` and seeded with mon
 6. Compare adjusted XP against thresholds to determine actual difficulty
 
 Encounter multipliers (DMG): 1 creature ×1.0, 2 ×1.5, 3–6 ×2.0, 7–10 ×2.5, 11–14 ×3.0, 15+ ×4.0
+
+## Treasure Generation
+
+When "Generate Treasure" is checked, the app rolls a hoard appropriate to the highest CR monster in the encounter:
+
+| CR Range | Tier | Coins | Gems | Magic Items |
+|----------|------|-------|------|-------------|
+| 0–4 | Low | cp / sp / gp | 30% chance, 10 gp gems | 10% common |
+| 5–10 | Medium | gp / pp | 40% chance, 50–100 gp gems | 30% uncommon, 5% rare |
+| 11–16 | High | gp / pp | 55% chance, 500–1,000 gp gems | 45% rare, 10% very rare |
+| 17+ | Legendary | gp / pp | Always, 1,000–5,000 gp gems | Always rare or higher |

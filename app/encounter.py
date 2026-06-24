@@ -205,6 +205,7 @@ def generate_encounter(
     adj_xp = int(raw_xp * get_multiplier(len(selected)))
     actual = get_actual_difficulty(adj_xp, level, size)
     labels, unique_monsters, instance_to_unique = _compute_instance_meta(selected)
+    max_cr = max((m.cr for m in selected), default=0)
 
     return {
         "monsters":            selected,
@@ -224,4 +225,5 @@ def generate_encounter(
         "encounter_type":      encounter_type,
         "environment":         environment,
         "num_creatures":       num,
+        "max_cr":              max_cr,
     }

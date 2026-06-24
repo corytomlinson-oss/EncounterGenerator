@@ -8,6 +8,7 @@ from app.database import Base, engine, get_db, SessionLocal
 from app.models import Monster, SavedEncounter
 from app.encounter import generate_encounter, DIFFICULTY_LABELS, DIFFICULTY_COLORS, DIFFICULTY_BG
 from app.seed import seed_monsters
+from app.treasure import generate_treasure
 
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
@@ -38,6 +39,7 @@ def generate(
     num_creatures: int = Form(...),
     encounter_type: str = Form(...),
     environment: str = Form(...),
+    include_treasure: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     result = generate_encounter(
@@ -52,6 +54,7 @@ def generate(
     if not result:
         return HTMLResponse("<p class='text-red-500'>No monsters found for those filters.</p>")
 
+    result["treasure"] = generate_treasure(result["max_cr"]) if include_treasure else None
     return templates.TemplateResponse(request, "partials/encounter_result.html", result)
 
 
